@@ -1,0 +1,22 @@
+#########################
+# Flake8 Configuration  #
+# (.flake8)             #
+#########################
+[flake8]
+ignore=
+    W503
+exclude =
+    .tox
+    .git,
+    __pycache__,
+    build,
+    *.pyc,
+    *third_party*,
+    scripts,
+    tests/errors
+    tests/examples
+max-line-length = 120
+max-complexity = 25
+import-order-style = pycharm
+application-import-names =
+    mpi

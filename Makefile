@@ -1,8 +1,11 @@
 init:
 	python -m pip install -r requirements.txt
 
+lint:
+	flake8 | head
+
 test:
-	python -m unittest
+	python -m unittest -f
 
 clean:
 	rm -rf build
@@ -10,4 +13,7 @@ clean:
 freeze:
 	python -m pip freeze > requirements.txt
 
-.PHONY: init test clean freeze
+loc:
+	find . -name '*.py' | xargs wc -l
+
+.PHONY: init lint test clean freeze loc

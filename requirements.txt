@@ -4,18 +4,22 @@ cffi @ file:///Users/runner/miniforge3/conda-bld/cffi_1666754815561/work
 charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1661170624537/work
 colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1666700638685/work
 cryptography @ file:///Users/runner/miniforge3/conda-bld/cryptography_1667423016117/work
+flake8==6.0.0
 googledrivedownloader @ file:///home/conda/feedstock_root/build_artifacts/googledrivedownloader_1619807768586/work
 idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1663625384323/work
 Jinja2 @ file:///home/conda/feedstock_root/build_artifacts/jinja2_1654302431367/work
 joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1663332044897/work
 MarkupSafe @ file:///Users/runner/miniforge3/conda-bld/markupsafe_1666770306410/work
+mccabe==0.7.0
 mkl-fft==1.3.1
 mkl-random==1.2.2
 mkl-service==2.4.0
 networkx @ file:///home/conda/feedstock_root/build_artifacts/networkx_1667391556261/work
 numpy @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_f1fp12zi4u/croot/numpy_and_numpy_base_1667233468135/work
 pandas==1.5.1
+pycodestyle==2.10.0
 pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1636257122734/work
+pyflakes==3.0.1
 pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1665350324128/work
 pyparsing @ file:///home/conda/feedstock_root/build_artifacts/pyparsing_1652235407899/work
 PySocks @ file:///home/conda/feedstock_root/build_artifacts/pysocks_1661604839144/work
