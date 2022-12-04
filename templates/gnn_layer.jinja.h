@@ -10,39 +10,31 @@
 #include "data/graph.h"
 #include "nn/initialization.h"
 #include "gnn_layer.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include "torch/torch.h"
+#pragma GCC diagnostic pop
 
-#include <unordered_set>
-#include <unordered_map>
-
-using std::unordered_set;
-using std::unordered_map;
-using torch::nn;
-
-//* Generate options
-//* - we generate this class regardless of additional options
 struct {{LayerClassName}}Options : GNNLayerOptions {
-    {%- for name, option_type in options.items() -%}
+    {% for name, option_type in options.items() %}
     {{option_type}} {{name}};
-    {%- endfor -%}
+    {% endfor %}
 };
 
 class {{LayerClassName}} : public GNNLayer {
    public:
     shared_ptr<{{LayerClassName}}Options> options_;
-    //* Generate all member variables
-    {%- for name, var_type in member_vars -%}
-    {{var_type}} {{name}}_;
-    {%- endfor -%}
+    {% for name, var_type in member_vars.items() %}
+    {{var_type}} {{name}};
+    {% endfor %}
 
-    //* Generate the constructor
     {{LayerClassName}}(shared_ptr<LayerConfig> layer_config, torch::Device device);
 
     void reset() override;
 
     torch::Tensor forward(torch::Tensor inputs, DENSEGraph dense_graph, bool train = true) override;
-    //* Generate all member functions
-    {%- for fn in member_fns -%}
+    {% for fn in member_fns %}
 
-    {{fn.returns}} {{fn.name}}(fn.args|join(', '));
-    {%- endfor -%}
+    {{fn.returns}} {{fn.name}}({{fn.args|join(', ')}});
+    {% endfor %}
 };

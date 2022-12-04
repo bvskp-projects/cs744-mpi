@@ -8,52 +8,158 @@
 #include "reporting/logger.h"
 #include "nn/initialization.h"
 
-//* Generate the constructor
+// XXX: GCC warns on always_inline
+#pragma GCC diagnostic ignored "-Wattributes"
+
+// XXX: always_inline to mirror original code (unsure if more efficient)
+#define FUNCGEN __attribute__((always_inline))
+
+namespace {
+
+struct SumFunc {
+    static constexpr bool useNumNbrs = false;
+
+    FUNCGEN static torch::Tensor segmented_reduce(torch::Tensor const& embeds, Indices const& offsets) {
+        return segmented_sum_with_offsets(embeds, offsets);
+    }
+};
+
+struct MaxFunc {
+    static constexpr bool useNumNbrs = false;
+
+    FUNCGEN static torch::Tensor segmented_reduce(torch::Tensor const& embeds, Indices const& offsets) {
+        return segmented_max_with_offsets(embeds, offsets);
+    }
+};
+
+struct MeanFunc {
+    static constexpr bool useNumNbrs = true;
+
+    FUNCGEN static torch::Tensor segmented_reduce(torch::Tensor const& embeds, Indices const& offsets) {
+        return segmented_sum_with_offsets(embeds, offsets);
+    }
+
+    FUNCGEN static torch::Tensor applyNumNbrs(torch::Tensor const& a_i, torch::Tensor const& num_nbrs) {
+        torch::Tensor denominator = torch::where(torch::not_equal(
+                    num_nbrs, 0), num_nbrs, 1).to(a_i.dtype()).unsqueeze(-1);
+        return a_i / denominator;
+    }
+};
+
+template <class ReduceFunc>
+FUNCGEN torch::Tensor update_all(DENSEGraph& dense_graph, torch::Tensor const& u) {
+    constexpr bool useNumNbrs = ReduceFunc::useNumNbrs;
+    torch::Tensor a_i;
+    [[maybe_unused]] torch::Tensor total_num_neighbors;
+
+    if (dense_graph.out_neighbors_mapping_.defined()) {
+        Indices outgoing_neighbors = dense_graph.getNeighborIDs(false, false);
+        Indices outgoing_neighbor_offsets = dense_graph.getNeighborOffsets(false);
+        torch::Tensor outgoing_num = dense_graph.getNumNeighbors(false);
+
+        torch::Tensor outgoing_embeddings = u.index_select(0, outgoing_neighbors);
+        a_i = ReduceFunc::segmented_reduce(outgoing_embeddings, outgoing_neighbor_offsets);
+
+        // often, aggregation functions require the number of neighbors
+        if constexpr(useNumNbrs) {
+            total_num_neighbors = outgoing_num;
+        }
+    }
+
+    if (dense_graph.in_neighbors_mapping_.defined()) {
+        Indices incoming_neighbors = dense_graph.getNeighborIDs(true, false);
+        Indices incoming_neighbor_offsets = dense_graph.getNeighborOffsets(true);
+        torch::Tensor incoming_num = dense_graph.getNumNeighbors(true);
+
+        torch::Tensor incoming_embeddings = u.index_select(0, incoming_neighbors);
+
+        if (a_i.defined()) {
+            a_i = a_i + segmented_sum_with_offsets(incoming_embeddings, incoming_neighbor_offsets);
+        } else {
+            a_i = segmented_sum_with_offsets(incoming_embeddings, incoming_neighbor_offsets);
+        }
+
+        // often, aggregation functions require the number of neighbors
+        if constexpr(useNumNbrs) {
+            if (total_num_neighbors.defined()) {
+                total_num_neighbors = total_num_neighbors + incoming_num;
+            } else {
+                total_num_neighbors = incoming_num;
+            }
+        }
+    }
+
+    if constexpr(useNumNbrs) {
+        return ReduceFunc::applyNumNbrs(a_i, total_num_neighbors);
+    } else {
+        return a_i;
+    }
+}
+
+} // anonymous namespace
+
 {{LayerClassName}}::{{LayerClassName}}(shared_ptr<LayerConfig> layer_config, torch::Device device) {
     config_ = layer_config;
     options_ = std::dynamic_pointer_cast<{{LayerClassName}}Options>(config_->options);
     input_dim_ = config_->input_dim;
     output_dim_ = config_->output_dim;
     device_ = device;
+    {% if init.local_vars %}
 
-    //* Generate local variable declarations
-    {%- for name, var_type in init.local_vars -%}
+    {% endif %}
+    {% for name, var_type in init.local_vars.items() %}
     {{var_type}} {{name}};
-    {%- endfor -%}
+    {% endfor %}
+    {% if init.body %}
 
-    {{init.body}}
+    {% endif %}
+    {% for stmt in init.body %}
+    {{stmt}}
+    {% endfor %}
 }
 
 void {{LayerClassName}}::reset() {
-    //* Generate local variable declarations
-    {%- for name, var_type in reset.local_vars -%}
+    [[maybe_unused]] auto tensor_options = torch::TensorOptions().dtype(torch::kFloat32).device(device_);
+
+    {% for name, var_type in reset.local_vars.items() %}
     {{var_type}} {{name}};
-    {%- endfor -%}
+    {% endfor %}
+    {% if reset.local_vars %}
 
-    {{reset.body}}
+    {% endif %}
+    {% for stmt in reset.body %}
+    {{stmt}}
+    {% endfor %}
+    {% if reset.body %}
 
+    {% endif %}
     if (config_->bias) {
         init_bias();
     }
 }
 
-torch::Tensor {{LayerClassName}}::forward(torch::Tensor inputs, DENSEGraph dense_graph, bool train) {
-    //* Generate local variable declarations
-    {%- for name, var_type in reset.local_vars -%}
+torch::Tensor {{LayerClassName}}::forward(torch::Tensor {{forward.inputs}}, DENSEGraph {{forward.graph}}, bool train) {
+    {% for name, var_type in forward.local_vars.items() %}
     {{var_type}} {{name}};
-    {%- endfor -%}
+    {% endfor %}
+    {% if forward.local_vars and forward.body %}
 
-    {{forward.body}}
+    {% endif %}
+    {% for stmt in forward.body %}
+    {{stmt}}
+    {% endfor %}
 }
-
-//* Generate all member functions
 {%- for fn in member_fns -%}
+
 {{fn.returns}} {{LayerClassName}}::{{fn.name}}({{fn.args|join(', ')}}) {
-    //* Generate local variable declarations
-    {%- for name, var_type in fn.local_vars -%}
+    {%- for name, var_type in fn.local_vars.items() -%}
     {{var_type}} {{name}};
     {%- endfor -%}
+    {% if fn.local_vars and fn.body %}
 
-    {{fn.body}}
+    {% endif %}
+    {% for stmt in fn.body %}
+    {{stmt}}
+    {% endfor %}
 }
 {%- endfor -%}

@@ -1,9 +1,6 @@
-
 class ErroneousLayer(nn.Module):
     def __init__(self, input_dim: int, output_dim: int):
-        def init():
-            pass
-        init()
+        output_dim, input_dim = input_dim, output_dim
 
     def reset_parameters(self):
         pass
