@@ -14,8 +14,10 @@ class BasicLayer(mpi.Module):
 
     def forward(self, graph: mpi.DENSEGraph, h: mpi.Tensor) -> mpi.Tensor:
         with graph.local_scope():
-            graph.ndata['h'] = h
-            graph.update_all(message_func=mpi.copy_u('h', 'm'), reduce_func=mpi.mean('m', 'h_N'))
-            h_N = graph.ndata['h_N']
-            h_total = mpi.cat([h, h_N], dim=1)
+            graph.ndata["h"] = h
+            graph.update_all(
+                message_func=mpi.copy_u("h", "m"), reduce_func=mpi.mean("m", "h_N")
+            )
+            h_N = graph.ndata["h_N"]
+            h_total = mpi.cat(h, h_N, dim=1)
             return self.linear(h_total)

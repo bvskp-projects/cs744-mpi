@@ -1,6 +1,6 @@
 class BasicLayer(mpi.Module):
     def __init__(self, input_dim: int, output_dim: int):
-        f''
+        f""""""
         self.reset_parameters()
 
     def reset_parameters(self):

@@ -1,6 +1,7 @@
+from contextlib import contextmanager
+
 from mpi.builtins import builtin_attrs
 from mpi.types import Attrs
-from contextlib import contextmanager
 
 
 class SymbolTable:
