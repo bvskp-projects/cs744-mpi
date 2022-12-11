@@ -126,7 +126,7 @@ class FunctionGenerator(ast.NodeVisitor):
     def visit_Expr(self, expr):
         if not isinstance(expr.value, ast.Constant):
             # Ignore function comments
-            self.write(self.visit(expr.value))
+            self.write(self.visit(expr.value) + ";")
 
     def visit_BinOp(self, bin_op):
         # TODO: assign priorities to operators and bracket them accordingly
@@ -218,8 +218,8 @@ class FunctionGenerator(ast.NodeVisitor):
         if self.expr_attrs[assign.value] is LinearAttrs:
             linear_input_dim = self.visit(assign.value.args[0])
             linear_output_dim = self.visit(assign.value.args[1])
-            self.write(f"_mpic_{target_expr}_input_dim_ = {linear_input_dim};")
-            self.write(f"_mpic_{target_expr}_output_dim_ = {linear_output_dim};")
+            self.write(f"_mpic_{target_expr}input_dim_ = {linear_input_dim};")
+            self.write(f"_mpic_{target_expr}output_dim_ = {linear_output_dim};")
         else:
             value_expr = self.visit(assign.value)
             self.write(f"{target_expr} = {value_expr};")
